@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-mark">⬡</span>
+        <span class="logo-text">CheckoutOS</span>
+      </div>
+      <nav class="header-nav">
+        <a href="/api/ping">ping</a>
+        <a href="/api/arch">arch</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="hero">
+      <div class="hero-badge">Microservices Demo</div>
+      <h1 class="hero-title">Distributed<br/><em>Checkout</em><br/>Platform</h1>
+      <p class="hero-desc">
+        A five-service Python/Flask application demonstrating gateway routing,
+        inter-service HTTP orchestration, inventory reservation, dynamic pricing,
+        and PostgreSQL audit persistence.
+      </p>
+    </section>
+
+    <section class="arch-grid">
+      <div class="arch-card" data-svc="gateway">
+        <div class="arch-icon">⬡</div>
+        <h3>Gateway</h3>
+        <p>Public entrypoint. Routes requests, generates correlation IDs, serves this UI.</p>
+        <div class="arch-port">:5000</div>
+      </div>
+      <div class="arch-card" data-svc="checkout">
+        <div class="arch-icon">◈</div>
+        <h3>Checkout</h3>
+        <p>Orchestrates pricing + inventory. Writes audit records to Postgres on success.</p>
+        <div class="arch-port">:5001</div>
+      </div>
+      <div class="arch-card" data-svc="pricing">
+        <div class="arch-icon">◇</div>
+        <h3>Pricing</h3>
+        <p>Deterministic SKU pricing. Returns unit price, total, and currency.</p>
+        <div class="arch-port">:5002</div>
+      </div>
+      <div class="arch-card" data-svc="inventory">
+        <div class="arch-icon">▣</div>
+        <h3>Inventory</h3>
+        <p>Stock reservation. Returns reservationId or out-of-stock reason.</p>
+        <div class="arch-port">:5003</div>
+      </div>
+      <div class="arch-card" data-svc="quote">
+        <div class="arch-icon">◎</div>
+        <h3>Quote Preview</h3>
+        <p>Lightweight price preview. No reservation, no DB write.</p>
+        <div class="arch-port">:5004</div>
+      </div>
+    </section>
+
+    <section class="routes-section">
+      <h2 class="section-title">Public Routes</h2>
+      <div class="routes-table">
+        <div class="route-row header-row">
+          <span>Method</span><span>Path</span><span>Description</span>
+        </div>
+        <div class="route-row">
+          <span class="method get">GET</span>
+          <span class="path">/</span>
+          <span>This UI</span>
+        </div>
+        <div class="route-row">
+          <span class="method get">GET</span>
+          <span class="path">/api/ping</span>
+          <span>Health ping</span>
+        </div>
+        <div class="route-row">
+          <span class="method get">GET</span>
+          <span class="path">/api/arch</span>
+          <span>Architecture summary</span>
+        </div>
+        <div class="route-row">
+          <span class="method post">POST</span>
+          <span class="path">/api/checkout</span>
+          <span>Submit a checkout order</span>
+        </div>
+        <div class="route-row">
+          <span class="method get">GET</span>
+          <span class="path">/api/quote?sku=&quantity=</span>
+          <span>Price preview (no reservation)</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="form-card">
+        <h2 class="form-title">Place an Order</h2>
+        <p class="form-subtitle">Try SKU-001, SKU-002, or SKU-003 (qty 1–10). Use SKU-999 to trigger out-of-stock.</p>
+
+        <div class="form-group">
+          <label for="customerId">Customer ID <span class="optional">(optional)</span></label>
+          <input type="text" id="customerId" placeholder="cust-101" value="cust-101" />
+        </div>
+        <div class="form-group">
+          <label for="sku">SKU <span class="required">*</span></label>
+          <input type="text" id="sku" placeholder="SKU-001" value="SKU-001" />
+        </div>
+        <div class="form-group">
+          <label for="quantity">Quantity <span class="required">*</span></label>
+          <input type="number" id="quantity" placeholder="2" value="2" min="1" />
+        </div>
+
+        <button class="submit-btn" onclick="submitCheckout()">
+          <span class="btn-text">Submit Checkout</span>
+          <span class="btn-arrow">→</span>
+        </button>
+
+        <div id="response-area" class="response-area hidden">
+          <div class="response-header">
+            <span class="response-label">Response</span>
+            <span id="response-status" class="response-status"></span>
+          </div>
+          <pre id="response-body"></pre>
+        </div>
+      </div>
+
+      <div class="form-card form-card--secondary">
+        <h2 class="form-title">Get a Quote</h2>
+        <p class="form-subtitle">Preview price without reserving stock.</p>
+
+        <div class="form-group">
+          <label for="quote-sku">SKU</label>
+          <input type="text" id="quote-sku" placeholder="SKU-001" value="SKU-001" />
+        </div>
+        <div class="form-group">
+          <label for="quote-qty">Quantity</label>
+          <input type="number" id="quote-qty" placeholder="1" value="1" min="1" />
+        </div>
+
+        <button class="submit-btn submit-btn--secondary" onclick="submitQuote()">
+          <span class="btn-text">Get Quote</span>
+          <span class="btn-arrow">→</span>
+        </button>
+
+        <div id="quote-area" class="response-area hidden">
+          <div class="response-header">
+            <span class="response-label">Quote</span>
+            <span id="quote-status" class="response-status"></span>
+          </div>
+          <pre id="quote-body"></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <span>CheckoutOS · Python + Flask · Microservices Demo</span>
+  </footer>
+
+  <script>
+    async function submitCheckout() {
+      const btn = document.querySelector('.submit-btn');
+      btn.classList.add('loading');
+
+      const payload = {
+        customerId: document.getElementById('customerId').value.trim() || undefined,
+        sku: document.getElementById('sku').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value, 10),
+      };
+
+      try {
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        showResponse('response-area', 'response-status', 'response-body', res.status, data);
+      } catch (err) {
+        showResponse('response-area', 'response-status', 'response-body', 'ERR', { error: err.message });
+      } finally {
+        btn.classList.remove('loading');
+      }
+    }
+
+    async function submitQuote() {
+      const sku = document.getElementById('quote-sku').value.trim();
+      const qty = document.getElementById('quote-qty').value;
+      try {
+        const res = await fetch(`/api/quote?sku=${encodeURIComponent(sku)}&quantity=${qty}`);
+        const data = await res.json();
+        showResponse('quote-area', 'quote-status', 'quote-body', res.status, data);
+      } catch (err) {
+        showResponse('quote-area', 'quote-status', 'quote-body', 'ERR', { error: err.message });
+      }
+    }
+
+    function showResponse(areaId, statusId, bodyId, status, data) {
+      const area = document.getElementById(areaId);
+      const statusEl = document.getElementById(statusId);
+      const bodyEl = document.getElementById(bodyId);
+      area.classList.remove('hidden');
+      statusEl.textContent = status;
+      statusEl.className = 'response-status ' + (status >= 200 && status < 300 ? 'ok' : 'err');
+      bodyEl.textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+
+</body>
+</html>
