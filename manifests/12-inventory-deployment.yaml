@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory
+  template:
+    metadata:
+      labels:
+        app: inventory
+    spec:
+      containers:
+        - name: inventory
+          image: __IMAGE_REGISTRY__/inventory:__IMAGE_TAG__
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5003
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: INVENTORY_PORT
+            - name: FLASK_ENV
+              value: production
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5003
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5003
+            initialDelaySeconds: 15
+            periodSeconds: 15

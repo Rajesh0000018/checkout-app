@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: quote-svc
+  namespace: shop
+spec:
+  selector:
+    app: quote
+  ports:
+    - name: http
+      port: 5004
+      targetPort: 5004
+  type: ClusterIP

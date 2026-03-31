@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: checkout
+  template:
+    metadata:
+      labels:
+        app: checkout
+    spec:
+      containers:
+        - name: checkout
+          image: __IMAGE_REGISTRY__/checkout:__IMAGE_TAG__
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5001
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: CHECKOUT_PORT
+            - name: FLASK_ENV
+              value: production
+            - name: PRICING_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: PRICING_URL
+            - name: INVENTORY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: INVENTORY_URL
+            - name: REQUEST_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: REQUEST_TIMEOUT_MS
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: shop-db-secret
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: shop-db-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: shop-db-secret
+                  key: DB_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 20
+            periodSeconds: 15

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quote
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quote
+  template:
+    metadata:
+      labels:
+        app: quote
+    spec:
+      containers:
+        - name: quote
+          image: __IMAGE_REGISTRY__/quote:__IMAGE_TAG__
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5004
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: QUOTE_PORT
+            - name: FLASK_ENV
+              value: production
+            - name: CURRENCY
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: CURRENCY
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5004
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5004
+            initialDelaySeconds: 15
+            periodSeconds: 15

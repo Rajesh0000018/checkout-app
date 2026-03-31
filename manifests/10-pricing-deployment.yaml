@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pricing
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pricing
+  template:
+    metadata:
+      labels:
+        app: pricing
+    spec:
+      containers:
+        - name: pricing
+          image: __IMAGE_REGISTRY__/pricing:__IMAGE_TAG__
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5002
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: PRICING_PORT
+            - name: FLASK_ENV
+              value: production
+            - name: CURRENCY
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: CURRENCY
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5002
+            initialDelaySeconds: 15
+            periodSeconds: 15

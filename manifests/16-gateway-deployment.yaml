@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: __IMAGE_REGISTRY__/gateway:__IMAGE_TAG__
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: GATEWAY_PORT
+            - name: FLASK_ENV
+              value: production
+            - name: CHECKOUT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: CHECKOUT_URL
+            - name: QUOTE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: QUOTE_URL
+            - name: REQUEST_TIMEOUT_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: shop-config
+                  key: REQUEST_TIMEOUT_MS
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 20
+            periodSeconds: 15
